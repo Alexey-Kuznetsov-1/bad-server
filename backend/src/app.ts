@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
+import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import mongoose from 'mongoose'
 import path from 'path'
@@ -14,6 +15,9 @@ import routes from './routes'
 const { PORT = 3000 } = process.env
 const app = express()
 
+// Доверяем первому прокси (nginx), чтобы rate-limit видел реальный IP
+app.set('trust proxy', 1)
+
 app.use(helmet())
 app.use(cookieParser())
 
@@ -24,11 +28,21 @@ app.use(
     })
 )
 
+// Общий лимит на всё API
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Слишком много запросов, попробуйте позже' },
+})
+
 app.use(serveStatic(path.join(__dirname, 'public')))
 
 app.use(urlencoded({ extended: false, limit: '100kb' }))
 app.use(json({ limit: '1mb' }))
 
+app.use(apiLimiter)
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)
