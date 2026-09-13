@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
+import mongoSanitize from 'express-mongo-sanitize'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import mongoose from 'mongoose'
@@ -41,6 +42,9 @@ app.use(serveStatic(path.join(__dirname, 'public')))
 
 app.use(urlencoded({ extended: false, limit: '100kb' }))
 app.use(json({ limit: '1mb' }))
+
+// Защита от NoSQL-инъекций: удаляет $ и . из ключей req.body/query/params
+app.use(mongoSanitize())
 
 app.use(apiLimiter)
 app.use(routes)
