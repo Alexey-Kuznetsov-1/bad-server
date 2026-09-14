@@ -173,18 +173,25 @@ export const getCustomerById = async (
     }
 }
 
-// TODO: Добавить guard admin
 export const updateCustomer = async (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
     try {
+        // whitelist — админ может менять только эти поля
+        const { name, email, phone } = req.body
+        const update: Record<string, unknown> = {}
+        if (name !== undefined) update.name = name
+        if (email !== undefined) update.email = email
+        if (phone !== undefined) update.phone = phone
+
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            update,
             {
                 new: true,
+                runValidators: true,
             }
         )
             .orFail(
