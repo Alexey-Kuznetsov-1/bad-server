@@ -34,6 +34,8 @@ class Api {
     private readonly baseUrl: string
     protected options: RequestInit
 
+    private csrfToken: string | null = null
+
     constructor(baseUrl: string, options: RequestInit = {}) {
         this.baseUrl = baseUrl
         this.options = {
@@ -53,12 +55,58 @@ class Api {
                   )
     }
 
+    protected async fetchCsrfToken(): Promise<string> {
+        const res = await fetch(`${this.baseUrl}/auth/csrf-token`, {
+            method: 'GET',
+            credentials: 'include',
+        })
+        if (!res.ok) {
+            throw new Error('Не удалось получить CSRF-токен')
+        }
+        const data = await res.json()
+        this.csrfToken = data.csrfToken
+        return data.csrfToken
+    }
+
+    protected async ensureCsrfToken(): Promise<string> {
+        if (this.csrfToken) return this.csrfToken
+        return this.fetchCsrfToken()
+    }
+
     protected async request<T>(endpoint: string, options: RequestInit) {
         try {
+            const method = (options.method || 'GET').toUpperCase()
+            const headers: Record<string, string> = {
+                ...((options.headers as Record<string, string>) ?? {}),
+            }
+
+            if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                const token = await this.ensureCsrfToken()
+                headers['X-CSRF-Token'] = token
+            }
+
             const res = await fetch(`${this.baseUrl}${endpoint}`, {
                 ...this.options,
                 ...options,
+                headers,
+                credentials: 'include',
             })
+
+            if (res.status === 403) {
+                await this.fetchCsrfToken()
+                const retryHeaders = {
+                    ...headers,
+                    'X-CSRF-Token': this.csrfToken as string,
+                }
+                const retry = await fetch(`${this.baseUrl}${endpoint}`, {
+                    ...this.options,
+                    ...options,
+                    headers: retryHeaders,
+                    credentials: 'include',
+                })
+                return await this.handleResponse<T>(retry)
+            }
+
             return await this.handleResponse<T>(res)
         } catch (error) {
             return Promise.reject(error)
@@ -299,7 +347,6 @@ export class WebLarekAPI extends Api implements IWebLarekAPI {
     }
 
     createProduct = (data: Omit<IProduct, '_id'>) => {
-        console.log(data)
         return this.requestWithRefresh<IProduct>('/product', {
             method: 'POST',
             body: JSON.stringify(data),

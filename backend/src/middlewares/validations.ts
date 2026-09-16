@@ -1,5 +1,6 @@
 import { Joi, celebrate } from 'celebrate'
 import { Types } from 'mongoose'
+import validator from 'validator'
 
 export const phoneRegExp = /^\+?\d[\d\s\-()]{5,20}\d$/
 
@@ -8,7 +9,6 @@ export enum PaymentType {
     Online = 'online',
 }
 
-// валидация id
 export const validateOrderBody = celebrate({
     body: Joi.object().keys({
         items: Joi.array()
@@ -34,16 +34,22 @@ export const validateOrderBody = celebrate({
         email: Joi.string().email().required().messages({
             'string.empty': 'Не указан email',
         }),
-        phone: Joi.string().required().pattern(phoneRegExp).messages({
+        phone: Joi.string().required().max(20).pattern(phoneRegExp).messages({
             'string.empty': 'Не указан телефон',
+            'string.max': 'Телефон слишком длинный',
+            'string.pattern.base': 'Неверный формат телефона',
         }),
-        address: Joi.string().required().messages({
+        address: Joi.string().required().max(500).messages({
             'string.empty': 'Не указан адрес',
         }),
         total: Joi.number().required().messages({
             'string.empty': 'Не указана сумма заказа',
         }),
-        comment: Joi.string().optional().allow(''),
+        comment: Joi.string()
+            .optional()
+            .allow('')
+            .max(500)
+            .custom((value) => validator.escape(value)),
     }),
 })
 

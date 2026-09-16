@@ -29,7 +29,7 @@ export const getCustomers = async (
         } = req.query
 
         const pageNum = Math.max(Number(page) || 1, 1)
-        const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 100)
+        const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 10)
 
         const filters: FilterQuery<Partial<IUser>> = {}
 
@@ -179,7 +179,6 @@ export const updateCustomer = async (
     next: NextFunction
 ) => {
     try {
-        // whitelist — админ может менять только эти поля
         const { name, email, phone } = req.body
         const update: Record<string, unknown> = {}
         if (name !== undefined) update.name = name

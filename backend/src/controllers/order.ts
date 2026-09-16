@@ -27,17 +27,17 @@ export const getOrders = async (
         } = req.query
 
         const pageNum = Math.max(Number(page) || 1, 1)
-        const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 100)
+        const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 10)
 
         const filters: FilterQuery<Partial<IOrder>> = {}
 
-        if (status) {
-            if (typeof status === 'object') {
-                Object.assign(filters, status)
+        if (status !== undefined) {
+            if (typeof status !== 'string') {
+                return next(
+                    new BadRequestError('Неверный формат параметра status')
+                )
             }
-            if (typeof status === 'string') {
-                filters.status = status
-            }
+            filters.status = status
         }
 
         if (totalAmountFrom) {
@@ -163,7 +163,7 @@ export const getOrdersCurrentUser = async (
         const { search, page = 1, limit = 5 } = req.query
 
         const pageNum = Math.max(Number(page) || 1, 1)
-        const limitNum = Math.min(Math.max(Number(limit) || 5, 1), 100)
+        const limitNum = Math.min(Math.max(Number(limit) || 5, 1), 10)
 
         const options = {
             skip: (pageNum - 1) * limitNum,

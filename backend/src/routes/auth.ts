@@ -10,6 +10,7 @@ import {
     updateCurrentUser,
 } from '../controllers/auth'
 import auth from '../middlewares/auth'
+import { generateCsrfToken } from '../middlewares/csrf'
 import {
     validateAuthentication,
     validateUserBody,
@@ -23,6 +24,11 @@ const authLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Слишком много попыток, попробуйте позже' },
+})
+
+authRouter.get('/csrf-token', (req, res) => {
+    const csrfToken = generateCsrfToken(req, res)
+    res.json({ csrfToken })
 })
 
 authRouter.get('/user', auth, getCurrentUser)
