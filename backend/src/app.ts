@@ -37,7 +37,15 @@ app.use((_req, res, next) => {
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 30,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Слишком много запросов, попробуйте позже' },
+})
+
+const strictLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
     standardHeaders: true,
     legacyHeaders: false,
     message: { message: 'Слишком много запросов, попробуйте позже' },
@@ -52,6 +60,8 @@ app.use(mongoSanitize())
 app.use(doubleCsrfProtection)
 
 app.use(apiLimiter)
+app.use('/customers', strictLimiter)
+app.use('/order/all', strictLimiter)
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)
