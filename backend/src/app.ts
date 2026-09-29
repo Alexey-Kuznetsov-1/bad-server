@@ -14,6 +14,14 @@ import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
 
+process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled Rejection:', reason)
+})
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error)
+})
+
 const { PORT = 3000 } = process.env
 const app = express()
 
